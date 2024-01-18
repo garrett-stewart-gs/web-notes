@@ -11,3 +11,5 @@ backend = when software is running on the computer
 frontend = when software is running on the browser
 
 Sync = If a property/method has "sync" in the name, it means it returns a promise. (returned promises are just data, so you. the .then() method should be passed a parameter, you can just name it data)
+
+Event Handler = code that defines what to do in response to an event. Involves LISTENING then ACTING. Frequently uses the '.on' method.
