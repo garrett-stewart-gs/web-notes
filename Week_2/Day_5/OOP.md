@@ -1,0 +1,1 @@
+Dependency Injection - passing an object the things it needs rather than having the object access them itself. This practice makes code more modular and testable

@@ -7,19 +7,19 @@ Sockets have various methods, such as .write(), that allow you to send text data
 
 ```js
 const connect = function () {
-  const conn = net.createConnection({
+  const connectSocket = net.createConnection({
     host: 'localhost',// IP address here,
     port: '50541'// PORT number here,
   });
-  conn.on('connect', stream => {
+  connectSocket.on('connect', stream => {
     console.log('connection established');
     conn.write('Name: GDS');
   });
 
   // interpret incoming data as text
-  conn.setEncoding("utf8");
-  conn.on('data',(data) => console.log(data))
-  return conn; //returns socket object
+  connectSocket.setEncoding("utf8");
+  connectSocket.on('data',(data) => console.log(data))
+  return connectSocket; 
 };
 ```
 
