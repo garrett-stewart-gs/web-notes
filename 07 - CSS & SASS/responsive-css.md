@@ -1,0 +1,1 @@
+font-scale = the ratio between the font sizes of 2 different elements, usually the header and the text content
