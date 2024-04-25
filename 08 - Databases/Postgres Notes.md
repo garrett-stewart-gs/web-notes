@@ -1,11 +1,5 @@
 ## Getting Started
 * postgres is a SERVER on the local machine that can host DATABASES. You create databases on that server. Each database contains relations (tables). 
-1. Start the Server with: ```startpostgres```
-2. Authorize server start with Labber PW: 'labber'
-3. Create or Connect to the database
-4. Create Relation Tables
-5. Query Database
-
 ** Note: all postgre sql commands need include a ';' to end the command **
 
 ## Common Commands

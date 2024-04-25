@@ -1,4 +1,13 @@
-## Connect to database server
+## Node Postgres
+A library that allows node js (and any files running in it) to access postgres sql servers.
+
+## Procedure
+1. install node postgres with ```npm install pg```
+2. import a connection class (Pool or Client)
+3. create new connection object using the imported class (Pool or Client) and specifying it's configuration (host, port, database, username, password). ***The configuration should use environment variables before it is posted in a public space***
+4. Create Query Files for modularizing your queries to the database
+
+## Example Code (without environment variables = risky)
 ```js
 const { Pool } = require('pg');
 

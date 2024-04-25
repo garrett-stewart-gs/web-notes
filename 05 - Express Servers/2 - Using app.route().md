@@ -9,7 +9,7 @@ Benefits:
 Code Example:
 ```js
 const express = require('express');
-const usersRouter = express.router();
+const usersRouter = express.Router();
 
 router.route('/')
   .get(function(req, res) {

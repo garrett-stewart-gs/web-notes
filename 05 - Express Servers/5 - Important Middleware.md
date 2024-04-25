@@ -1,7 +1,7 @@
 ## express.json()
 Parses requests with JSON payloads, making the parsed data available on req.body.
 ```js
-app.use(express.json());
+app.use(express.json()); //note ajax requests from the client that send json data must have contentType: 'application/json' specified, and data: JSON.stringify(data) specified
 ```
 
 ## express.urlencoded()

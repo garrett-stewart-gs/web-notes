@@ -16,14 +16,8 @@ const PORT = 3000; //server config.
 
 //ROUTES GO HERE
 
-app.listen(PORT, ()=>{
+app.listen(PORT, ()=>{ //starts express server
   console.log(`Server listening on port: ${PORT}`);
 });
 
 ```
-
-## Routing Functions
-
-
-
-### app.route()
