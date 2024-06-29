@@ -41,7 +41,7 @@ const router = createBrowserRouter([
     path:'/users',
     element: <UsersPage/>,
     errorElement: <ErrorPage/>,
-    children: // CREATES A NESTED ROUTE
+    children: // CREATES A NESTED ROUTE, rendered with <Outlet/> inside <UsersPage/>
       {
         path: '/users/:id',
         element: <ProfilePage/>,
@@ -57,3 +57,20 @@ root.render(
     <RouterProvider router={router} /> // router provider component is passed pre-configured router object in property called router
   </React.StrictMode>
 )
+
+
+// INSIDE src/pages/UsersPage.jsx
+
+import Navbar from './../components/NavBar.jsx'
+import UsersList from './../components/UsersList.jsx'
+
+export function UsersPage(){
+
+  return (
+    <NavBar/>
+    <UsersList/>
+    <Outlet/> // outputs the children, inside router configuration inside main.jsx or index.jsx
+  )
+}
+
+```
