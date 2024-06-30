@@ -13,6 +13,9 @@ This new format replaces Router Components for creating a react router. Router C
 ### Setup
 1. Import createBrowserRouter function
 2. Import RouterProvider Component
+3. Create and configure the router object
+4. Pass the router object to the RouterProvider via the 'router' property
+5. create the page components that match the router configuration
 
 
 ### Example Code
