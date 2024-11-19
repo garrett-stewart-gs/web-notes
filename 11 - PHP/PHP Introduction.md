@@ -6,6 +6,9 @@
 * runs on web server (commonly Apache or Nginx)
 * must be installed prior to laravel (or comparable framework)
 
+### Conventions
+* snake_case
+
 ### Installation
 * You must install the php interpreter to run php
 ```
