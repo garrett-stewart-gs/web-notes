@@ -28,12 +28,12 @@
         build: . # builds the container from a docker file in the current directory (. = cd)
         environment:
           PORT: ${WEB_CONTAINER_PORT} # nextjs uses PORT env variable by default
-          PGHOST: db ## named db to match the service named db (dockerized containers can reach eachother with this reference)
+          PGHOST: db # named db to match the service named db (dockerized containers can reach eachother with this reference)
           PGPORT: ${PGPORT}
-          PGUSER: ${PGUSER}
-          PGPASSWORD: ${PGPASSWORD}
+          PGUSER: ${PGUSER} # postgres has "postgres" username by default, but it is recommended that you register a unique username in postgres
+          PGPASSWORD: ${PGPASSWORD} 
           PGDATABASE: ${PGDATABASE}
-        command: ["npm", "run", "start", "--", "-H", "0.0.0.0"]
+        command: ["npm", "run", "start", "--", "-H", "0.0.0.0"] # exec array (cleaner execution than shell string)
         ports:
           - "${WEB_HOST_PORT}:${WEB_CONTAINER_PORT}" # configures linux server port to direct traffic to the container port that is running the relavent service
         volumes:

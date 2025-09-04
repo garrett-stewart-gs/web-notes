@@ -7,9 +7,8 @@
     web:
       build: .
       environment:
-        PORT: 3000
-        HOSTNAME: 0.0.0.0
-      command: ["npm","run","start"]
+        PORT: 3000 # this port env variable is injected into nextjs
+      command: ["npm","run","start", "--", "-H", "0.0.0.0"]
       ports:
-        - "8080:3000"   # host:container
+        - "8080:3000"   # host:container. you can use .env variables for these too.
 ```

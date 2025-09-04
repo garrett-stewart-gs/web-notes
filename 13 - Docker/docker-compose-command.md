@@ -10,6 +10,7 @@
 
 ### `command` Forms
 - exec (array) vs. shell (string)
+- It is recommended that you stick to exec arrays, and only use shell strings when you need additional functionality
 - **exec pros:**
   - Runs the binary directly (no shell). Predictable argv splitting; no weird quoting.
   - Better signal handling: your process is PID 1 (vs a shell wrapper); stops cleanly.
