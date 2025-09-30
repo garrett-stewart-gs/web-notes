@@ -1,4 +1,24 @@
-## Docker Compose Command
+## Docker CLI Commands
+- `docker build -t <imageName>:<versionNumber/Tag> <directory>`
+- `docker run <imageName>:<versionNumber/Tag>`
+
+
+ 
+
+
+## Docker-Compose CLI Commands
+- `docker compose up`
+- `docker compose down`
+- `docker compose start`
+- `docker compose stop`
+
+## Advanced Docker-Compose CLI Commands
+- `docker compose --env-file .env.dev -f docker-compose.dev.yml up -d`
+- `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d`
+
+
+
+
 - a docker parameter that defines the main process of the docker container
 - it runs every time the container starts, so this is where you start your app!
 - the command can be configured as an array or as a string.

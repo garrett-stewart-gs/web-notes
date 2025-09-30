@@ -3,7 +3,7 @@
 - Usecases:
   - data persistance across container restarts/rebuilds (without it, all data in the container is lost when it restarts/crashes/etc)
   - makes files available between containers or between host and container.
-  - initialization/seeding
+  - initialization/seeding a database
 
 ### Persisting Postgres Data
 - Postgres stores everything in `/var/lib/postgresql/data`
@@ -12,15 +12,19 @@
 - the container only sees `/var/lib/postgresql/data`, the host machine has the files stored in `/var/lib/docker/volumes/{volumeName}/_data/`
 
 ### Initialization And Seeding A Dockerized Database (optional)
-- Optionally, you can create an initialization volume to seed a database
-- the initiallization volume should be: `- ./db-init:/docker-entrypoint-initdb.d`
-- The initialization only runs if the external storage location/directory generated/defined in volumes is empty
+- Optionally, you can create an initialization volume to create a database, users, permissions, tables, and even seed data
+- The postgres initialization volume MUST be: `- ./<desiredHostPath>:/docker-entrypoint-initdb.d:ro` (:ro means read only)
+- The initialization only runs if the database volume is empty (once, theoretically)
+  - When the postgres image runs, docker calls its entry point
+  - The entry point script looks at the database volume directory (`/var/lib/postgresql/data`)
+  - If it is empty, the entry point script then looks at the init directory (`/docker-entrypoint-initdb.d`), and executes all files in that directory
+  - If it is NOT empty, the entry point script assumes the database cluster already exists, so it skips db initialization (does not read the init directory)
 - in short, the initialization literally only runs 1 time, regardless of how many lifecycles have occured for the docker container
 
 ### Named Volumes (docker-managed storage)
 - When defining named volumes in docker-compose, each volume follows this format: `<volumme_name>:<container_path>`
-- This is similar to port mapping. The host machine has a directory for the named volume, and it is linked to the path the container thinks it is reading/writing to. The container tells the docker engine, write blank to the container_path. The docker engine writes the data to the true storage location, which is derived from the volume_name
-- For example, if container writes to `/var/lib/postgresql/data`, docker engine writes to `/var/lib/docker/volumes/<volume_name>/_data`
+- Should be used for volumes that should be managed by docker exclusively (database data, for example)
+- If container path is `/var/lib/postgresql/data`, docker engine writes to host at `/var/lib/docker/volumes/<volume_name>/_data`
 - Named Volumes Pros:
   - portable/host-agnostic (due to no hard-coded paths)
   - safer dbs (due to storage being nested deeper and less likely to be edited by anything but docker)
@@ -31,13 +35,16 @@
 
 ### Bind-Mounted Volumes
 - When bind mounting volumes in docker-compose, each volume follows this format: `./<host_path>:<container_path>`
+- Should be used for volumes that need to be easily accessible for humans/developers
 - Bind-mounted Volumes Pros:
+  - binds the volume to the docker-compose.yml file's cd (so the volume's host path/directory becomes a sibling to the docker-compose.yml file)
   - immediate visibility in your project (great for logs/dumps)
   - easier to copy/rsync/gitignore
   - Using bind mounted volues does not require that you define volumes at the top-level (unlike named volumes)
 - Bind-mounted Volumes Cons:
   - host-path quirks/permissions across various machines/OSes
-  - risky for DB (editing can corrupt data)
+  - not suitable for DB data (easier for humans to edit/corrupt, and db data should not be edited manually)
+  - files may be invisible (unclear on the mechanism, but if you get errors based on missing files or 403 error, investigate this)
 
 ### Mounting Volumes For Multiple Services
 - You can also mount 1 volume in multiple places
@@ -56,11 +63,12 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${PGUSER}
-      POSTGRES_PASSWORD: ${PGPASSWORD}
-      POSTGRES_DB: ${PGDATABASE}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - db:/var/lib/postgresql/data # postgresql stores in /var/lib/postgresql/data by default.
+      - ${POSTGRES_DB}:/var/lib/postgresql/data # postgresql stores in /var/lib/postgresql/data by default.
+      - ./db/init:/docker-entrypoint-initdb.d:ro # bind mounted directory for init files (:ro means read-only priviledges)
 
   db_backup:
     image: postgres:16
@@ -68,13 +76,13 @@ services:
     depends_on: 
       - db
     environment:
-      PGHOST: db # named db to match the service named db (backup process knows to connect because of this line)
-      PGPORT: ${PGPORT}
-      PGUSER: ${PGUSER} 
-      PGPASSWORD: ${PGPASSWORD}
-      PGDATABASE: ${PGDATABASE}
+      POSTGRES_HOST: db # named db to match the service named db (backup process knows to connect because of this line)
+      POSTGRES_PORT: ${PGPORT}
+      POSTGRES_USER: ${POSTGRES_USER} 
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - db_backups:/db_backups # host folder for dump files
+      - ./db/backups:/backups:rw # host folder for dump files (:rw means read/write priviledges)
     command: >
       sh -eu -c '
         until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -t 2 >/dev/null; do
@@ -84,8 +92,7 @@ services:
       '
 
 volumes: # named volume definitions (necessary if services are referencing named volumes)
-  db: {}
-  db_backups: {}
+  ${POSTGRES_DB}: {}
 ```
 
 ### Using Data Dumps In Your Back Up Database Volume
@@ -105,3 +112,7 @@ volumes: # named volume definitions (necessary if services are referencing named
 
 ### Docker Volume Pruning
 - 
+
+
+- how does the docker container know the db service has been initialized and doesn't get recreated?
+- volumes can be configured to initialize postgres db, user, tables, and data. How so? how does this separate from maintaining the data?
