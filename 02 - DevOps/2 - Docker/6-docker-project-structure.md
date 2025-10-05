@@ -25,7 +25,6 @@
       - prod-up.sh
       - prod-down.sh
     - `proxy/` (nginx/traefik/caddy config + certs dir if you run a reverse proxy)
-    - `secrets/` (for highly sensitive info: api keys, passwords)
     - `systemd/` (optional unit file to auto-start the stack on boot)
     - `.gitignore` (ignore .env*, db/backups/**, logs, dumps)
     - `README.md` (runbook: how to deploy, backup, restore, rollback)
