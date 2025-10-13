@@ -26,3 +26,19 @@
 - From your dev environment, you build the docker image and upload it to dockerhub
 - In your Staging and/or Production environment, you execute the image by referencing the image tag (docker will determine if it has the correct image, and download it if it doesn't)
 - DockerHub is a paid for image registry, Github Container Registry (GHCR)
+
+
+## Docker Commands
+- view images on local machine: `docker images`
+- view images being used by containers: `docker ps` or `docker ps -a` (includes non-running containers)
+- build an image (locally):`docker build -t ghcr.io/<your-org-or-username>/<image-name>:<tag> .`
+- remove an image (locally): `docker rmi <image:tag>` or `docker rmi <image-id> <image-id-2>` (multiple)
+- start a container:
+- stop a container: `docker stop <container>`
+- remove a container: `docker rm <container>`
+- remove "dangling" containers: `docker image prune` (safe)
+- remove all unused containers: `docker image prune -a` (agressive)
+- push docker image to ghcr: `docker push ghcr.io/<gitusername>/<imageName>:<tag>`
+
+## Docker Compose Commands
+- `docker compose --env-file .env.staging -f docker-compose.yml up -d`

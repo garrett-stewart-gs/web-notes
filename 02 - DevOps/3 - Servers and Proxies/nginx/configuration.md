@@ -43,99 +43,141 @@
 
 ## Global Nginx Config File Example
 ```nginx
+# GLOBAL NGINX CONFIG
+user www-data;
+worker_processes auto;
+worker_rlimit_nofile 100000;
+pid /run/nginx.pid;
 
-  # sets user, reduces exposure/risk if worker is compromised
-  user  www-data; # is it common to use www-data or should I make a custom one?
+events {
+  worker_connections 4096;
+}
 
-  # this matches the number of workers to the number of CPU cores available in the host machine
-  worker_processes auto; 
+http {
+  # CONTENT-TYPE HEADERS
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
 
-  # stores the master process ID in the chosen path/file, so the system knows how to signal nginx
-  pid /run/nginx.pid; 
+  # this value is dependent on your vps
+  resolver 213.186.33.99 1.1.1.1 valid=300s;
+  resolver_timeout 5s;
 
-  # debian/ubuntu convention: load any dynamic modules that have been enabled
-  include /etc/nginx/modules-enabled/*.conf;
+  # PRIVACY / SECURITY
+  server_tokens off;
+  add_header X-Content-Type-Options "nosniff" always; # (minimizes bugs & prevents some code injections involving plain text)
 
-  events {
-    # defines how many connections each worker handles (affects RAM usage)
-    worker_connections 1024;
+  # LOGGING
+  log_format proxy '$remote_addr - $host "$request" $status '
+    'upstream=$upstream_addr us=$upstream_status '
+    'rt=$request_time urt=$upstream_response_time ref="$http_referer" ua="$http_user_agent"';
+  access_log /var/log/nginx/access.log proxy;
+  error_log  /var/log/nginx/error.log warn;
+
+  # CORE PERFORMANCE TOGGLES
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+  keepalive_timeout 30;
+  keepalive_requests 1000;
+  types_hash_max_size 2048;
+
+  # BODY REQUEST LIMITS (can raise if website accepts large uploads)
+  client_max_body_size 20m;
+
+  # COMPRESSION
+  gzip on;
+  gzip_comp_level 5;
+  gzip_vary on;
+  gzip_proxied any;
+  gzip_min_length 1024;
+  gzip_types
+    text/plain
+    text/css
+    application/json
+    application/javascript
+    application/xml
+    application/rss+xml
+    application/atom+xml
+    image/svg+xml;
+  gzip_disable "msie6";
+
+  # REVERSE PROXY DEFAULTS (inherited by all servers/locations)
+  proxy_http_version 1.1;
+  proxy_redirect off;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Host  $host;                        # Some frameworks prefer this over Host
+  proxy_set_header X-Forwarded-Port  $server_port;                 # Lets apps reconstruct absolute URLs
+  proxy_set_header User-Agent $http_user_agent;
+
+  # WebSockets / Next.js HMR (WHAT IS THIS EXACTLY?)
+  map $http_upgrade $connection_upgrade {
+    default close;
+    'websocket' upgrade;
   }
+  proxy_set_header Upgrade    $http_upgrade;
+  proxy_set_header Connection $connection_upgrade;
 
-  http {
+  # TIMEOUTS (tune per-app if you have long-running endpoints)
+  proxy_connect_timeout 5s;
+  proxy_send_timeout 60s;
+  proxy_read_timeout 60s;
 
-    # CONTENT-TYPE HEADERS
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
+  # LOAD PER-APP VIRTUAL HOSTS
+  include /etc/nginx/sites-enabled/*.conf;
 
-    # PRIVACY / SECURITY
-    server_tokens off;
-    add_header X-Content-Type-Options "nosniff" always; # (minimizes bugs & prevents some code injections involving plain text)
+}
 
-    # LOGGING
-    log_format proxy '$remote_addr - $host "$request" $status '
-      'upstream=$upstream_addr us=$upstream_status '
-      'rt=$request_time urt=$upstream_response_time ref="$http_referer" ua="$http_user_agent"';
-    access_log /var/log/nginx/access.log proxy;
-    error_log  /var/log/nginx/error.log warn;
+```
 
-    # CORE PERFORMANCE TOGGLES
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 65;
-    types_hash_max_size 2048;
+```nginx
+# PER-APP NGINX CONFIG
+# Redirect 80 -> 443
+server {
+  listen 80;
+  listen [::]:80;
+  server_name freshairmedia.garrett-stewart.com;
+  return 301 https://$host$request_uri;
+}
 
-    # BODY REQUEST LIMITS (can raise if website accepts large uploads)
-    client_max_body_size 20m;
+# Cloudflare <-> origin TLS
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  http2 on;
+  server_name freshairmedia.garrett-stewart.com;
 
-    # COMPRESSION
-    gzip on;
-    gzip_comp_level 5;
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_min_length 1024;
-    gzip_types
-      text/plain
-      text/css
-      application/json
-      application/javascript
-      application/xml
-      application/rss+xml
-      application/atom+xml
-      image/svg+xml;
+  # Cloudflare Origin cert (wildcard for *.garrett-stewart.com)
+  ssl_certificate     /etc/ssl/cloudflare/garrett-stewart.com.origin.crt;
+  ssl_certificate_key /etc/ssl/cloudflare/garrett-stewart.com.origin.key;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers off;
+  ssl_session_cache shared:SSL:10m;
 
-    # REVERSE PROXY DEFAULTS (inherited by all servers/locations)
+  # HSTS (good since you’re behind CF on Full Strict)
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+  # If you enabled Cloudflare Authenticated Origin Pulls, uncomment:
+  # ssl_client_certificate /etc/ssl/cloudflare/origin-pull-ca.pem;
+  # ssl_verify_client on;
+
+  # Proxy to your app
+  location / {
+    proxy_pass http://127.0.0.1:3000;
     proxy_http_version 1.1;
-    proxy_redirect off;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
 
-    # do i need these here?
-    proxy_set_header User-Agent $http_user_agent;
-    proxy_set_header Cookie $http_cookie;
-    proxy_set_header Accept-Language $http_accept_language;
-    proxy_set_header Authorization $http_authorization;
-
-
-    # WebSockets / Next.js HMR (WHAT IS THIS EXACTLY?)
-    map $http_upgrade $connection_upgrade {
-      default upgrade;
-      ""      keep-alive;
-    }
-    proxy_set_header Upgrade    $http_upgrade;
-    proxy_set_header Connection $connection_upgrade;
-
-    # TIMEOUTS (tune per-app if you have long-running endpoints)
-    proxy_connect_timeout 5s;
-    proxy_send_timeout 60s;
+    # Helpful for Next.js/websockets
+    proxy_set_header Upgrade           $http_upgrade;
+    proxy_set_header Connection        $connection_upgrade;
     proxy_read_timeout 60s;
-
-    # LOAD PER-APP VIRTUAL HOSTS
-    include /etc/nginx/sites-enabled/*.conf;
-
   }
+}
+
 
 
 ```
